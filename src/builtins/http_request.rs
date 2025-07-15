@@ -17,7 +17,7 @@ pub struct Params {
     pub timeout: Option<u64>,
 }
 
-pub async fn http_request(params: &Params) -> Result<(u16, Option<String>), Box<dyn Error>> {
+pub async fn handler(params: &Params) -> Result<(u16, Option<String>), Box<dyn Error>> {
     let method = Method::from_str(&params.method)
         .map_err(|_| format!("Invalid method: {}", params.method))?;
 

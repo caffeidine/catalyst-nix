@@ -8,40 +8,36 @@ rec {
     };
   };
 
-  test_get = rec {
+  test_get = test rec {
     response = httpRequest {
       method = "GET";
       url = config.baseUrl + "/get";
       headers = config.headers;
       timeout = 2000;
     };
-    assertions = (
-      assert response.status == 200;
-      assert response.json != null;
-      assert response.json.args == { };
-      assert response.json.headers."Host" == "httpbin.org";
-      null
-    );
+    assertions = [
+      (response.status == 200)
+      (response.json ? args && response.json.args == { })
+      (response.json ? headers && response.json.headers."Host" == "httpbin.org")
+    ];
   };
 
   test_auth =
     let
-      token = "Catalyst Testing Token";
+      testToken = "Catalyst Testing Token";
     in
-    rec {
+    test rec {
       response = httpRequest {
         method = "GET";
         url = config.baseUrl + "/bearer";
         headers = config.headers // {
-          "Authorization" = "Bearer " + token;
+          "Authorization" = "Bearer " + testToken;
         };
         timeout = 2000;
       };
-      assertions = (
-        assert response.status == 200;
-        assert response.json != null;
-        assert response.json.token == token;
-        null
-      );
+      assertions = [
+        (response.status == 200)
+        (response.json ? token && response.json.token == testToken)
+      ];
     };
 }

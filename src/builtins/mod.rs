@@ -1,4 +1,5 @@
 mod http_request;
+mod test;
 
 use snix_eval::builtin_macros::builtins;
 
@@ -19,25 +20,55 @@ mod extra {
         Value,
     };
 
-    use super::http_request::{
-        Params,
-        http_request,
-    };
+    #[builtin("test")]
+    pub async fn builtins_test(
+        co: GenCo,
+        args: Value,
+    ) -> Result<Value, ErrorKind> {
+        use super::test::{
+            Params,
+            handler,
+        };
+
+        let (json, _ctx) = args.clone().into_contextful_json(&co).await?;
+
+        let params: Params = from_value(json).expect("Failed to parse parameters");
+
+        let method = &params.response.request.method;
+        let url = &params.response.request.url;
+
+        match handler(&params).await {
+            Ok(_) => println!("✅ {method} {url}"),
+            Err(err) => println!("❌ {method} {url}: {err}"),
+        }
+
+        Ok(args)
+    }
 
     #[builtin("httpRequest")]
     pub async fn builtins_http_request(
         co: GenCo,
         args: Value,
     ) -> Result<Value, ErrorKind> {
-        let (json, _ctx) = args.into_contextful_json(&co).await?;
+        use super::http_request::{
+            Params,
+            handler,
+        };
+
+        let (json, _ctx) = args.clone().into_contextful_json(&co).await?;
 
         let params: Params = from_value(json).expect("Failed to parse parameters");
 
-        let (status, body) = match http_request(&params).await {
+        let (status, body) = match handler(&params).await {
             Ok(res) => res,
             Err(err) => {
-                println!("❌ {} {}: {err}", params.method, params.url);
-                return Ok(Value::Null);
+                let message = Value::String(NixString::from(err.to_string()));
+
+                return Ok(Value::attrs(NixAttrs::from_iter([
+                    ("status", Value::Null),
+                    ("body", message),
+                    ("json", Value::Null),
+                ])));
             }
         };
 
@@ -56,9 +87,8 @@ mod extra {
             None => Value::Null,
         };
 
-        println!("✅ {} {}", params.method, params.url);
-
         Ok(Value::attrs(NixAttrs::from_iter([
+            ("request", args),
             ("status", status),
             ("body", body),
             ("json", json),
