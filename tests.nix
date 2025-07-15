@@ -8,30 +8,30 @@ rec {
     };
   };
 
-  tests."First Test" = rec {
+  get_post = rec {
     response = httpRequest {
       method = "GET";
       url = config.baseUrl + "/posts/1";
       headers = config.headers;
       timeout = 2000;
     };
-    _ = (
+    assertions = (
       assert response.status == 200;
       assert response.json != null;
       null
     );
   };
 
-  tests."Second Test" = rec {
+  create_post = rec {
     response = httpRequest {
       method = "POST";
       url = config.baseUrl + "/posts";
       headers = config.headers // {
-        "Authorization" = "Bearer " + toString tests."First Test".response.json.id;
+        "Authorization" = "Bearer " + toString get_post.response.json.id;
       };
       timeout = 2000;
     };
-    _ = (
+    assertions = (
       assert response.status == 201;
       assert response.json != null;
       null
