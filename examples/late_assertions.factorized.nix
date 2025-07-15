@@ -1,5 +1,4 @@
-with builtins;
-rec {
+let
   config = {
     baseUrl = "https://httpbin.org";
     headers = {
@@ -7,19 +6,16 @@ rec {
       "Content-Type" = "application/json";
     };
   };
-
-  test_get = test rec {
+in
+with builtins;
+rec {
+  test_get = test {
     response = httpRequest {
       method = "GET";
       url = config.baseUrl + "/get";
       headers = config.headers;
-      timeout = 2000;
     };
-    assertions = [
-      (response.status == 200)
-      (response.json ? args && response.json.args == { })
-      (response.json ? headers && response.json.headers."Host" == "httpbin.org")
-    ];
+    assertions = [ ];
   };
 
   test_auth =
@@ -33,11 +29,15 @@ rec {
         headers = config.headers // {
           "Authorization" = "Bearer " + testToken;
         };
-        timeout = 2000;
       };
-      assertions = [
-        (response.status == 200)
-        (response.json ? token && response.json.token == testToken)
+      assertions = with response; [
+        # late assertions for `test_get`
+        (test_get.response.status == 200)
+        (test_get.response.json ? args && test_get.response.json.args == { })
+        (test_get.response.json ? headers && test_get.response.json.headers."Host" == "httpbin.org")
+
+        (status == 200)
+        (json ? token && json.token == "Catalyst Testing Token")
       ];
     };
 }
