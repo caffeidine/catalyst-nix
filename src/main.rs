@@ -56,7 +56,8 @@ mod extra {
         url: String,
         #[serde(default)]
         headers: BTreeMap<String, String>,
-        timeout: u64,
+        #[serde(default)]
+        timeout: Option<u64>,
     }
 
     #[builtin("httpRequest")]
@@ -75,8 +76,13 @@ mod extra {
 
         let method = Method::from_str(&method).expect("Failed to parse method");
 
-        let http_client = Client::builder()
-            .timeout(Duration::from_millis(timeout))
+        let mut http_client_builder = Client::builder();
+
+        if let Some(timeout) = timeout {
+            http_client_builder = http_client_builder.timeout(Duration::from_millis(timeout));
+        }
+
+        let http_client = http_client_builder
             .build()
             .expect("Failed to build http client");
 
