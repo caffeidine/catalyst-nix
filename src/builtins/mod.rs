@@ -33,10 +33,10 @@ mod extra {
 
         let params: Params = from_value(json).expect("Failed to parse parameters");
 
-        let (status, body) = match http_request(params).await {
+        let (status, body) = match http_request(&params).await {
             Ok(res) => res,
             Err(err) => {
-                println!("Error: {err}");
+                println!("❌ {} {}: {err}", params.method, params.url);
                 return Ok(Value::Null);
             }
         };
@@ -55,6 +55,8 @@ mod extra {
             Some(body) => Value::String(NixString::from(body)),
             None => Value::Null,
         };
+
+        println!("✅ {} {}", params.method, params.url);
 
         Ok(Value::attrs(NixAttrs::from_iter([
             ("status", status),

@@ -9,15 +9,15 @@ use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct Params {
-    method: String,
-    url: String,
+    pub method: String,
+    pub url: String,
     #[serde(default)]
-    headers: BTreeMap<String, String>,
+    pub headers: BTreeMap<String, String>,
     #[serde(default)]
-    timeout: Option<u64>,
+    pub timeout: Option<u64>,
 }
 
-pub async fn http_request(params: Params) -> Result<(u16, Option<String>), Box<dyn Error>> {
+pub async fn http_request(params: &Params) -> Result<(u16, Option<String>), Box<dyn Error>> {
     let method = Method::from_str(&params.method)
         .map_err(|_| format!("Invalid method: {}", params.method))?;
 
@@ -31,9 +31,9 @@ pub async fn http_request(params: Params) -> Result<(u16, Option<String>), Box<d
         .build()
         .expect("Failed to build http client");
 
-    let mut request = http_client.request(method, params.url);
+    let mut request = http_client.request(method, &params.url);
 
-    for (key, value) in params.headers {
+    for (key, value) in &params.headers {
         request = request.header(key, value)
     }
 
