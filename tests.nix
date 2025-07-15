@@ -1,40 +1,47 @@
 with builtins;
 rec {
   config = {
-    baseUrl = "https://jsonplaceholder.typicode.com";
+    baseUrl = "https://httpbin.org";
     headers = {
       "User-Agent" = "Catalyst Test";
       "Content-Type" = "application/json";
     };
   };
 
-  get_post = rec {
+  test_get = rec {
     response = httpRequest {
       method = "GET";
-      url = config.baseUrl + "/posts/1";
+      url = config.baseUrl + "/get";
       headers = config.headers;
       timeout = 2000;
     };
     assertions = (
       assert response.status == 200;
       assert response.json != null;
+      assert response.json.args == { };
+      assert response.json.headers."Host" == "httpbin.org";
       null
     );
   };
 
-  create_post = rec {
-    response = httpRequest {
-      method = "POST";
-      url = config.baseUrl + "/posts";
-      headers = config.headers // {
-        "Authorization" = "Bearer " + toString get_post.response.json.id;
+  test_auth =
+    let
+      token = "Catalyst Testing Token";
+    in
+    rec {
+      response = httpRequest {
+        method = "GET";
+        url = config.baseUrl + "/bearer";
+        headers = config.headers // {
+          "Authorization" = "Bearer " + token;
+        };
+        timeout = 2000;
       };
-      timeout = 2000;
+      assertions = (
+        assert response.status == 200;
+        assert response.json != null;
+        assert response.json.token == token;
+        null
+      );
     };
-    assertions = (
-      assert response.status == 201;
-      assert response.json != null;
-      null
-    );
-  };
 }
